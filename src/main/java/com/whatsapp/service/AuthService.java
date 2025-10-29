@@ -25,8 +25,22 @@ public class AuthService {
 
     @Transactional
     public AuthResponse verifyOtpAndRegister(RegisterRequest request) {
+        System.out.println(request.getName() + "," + request.getEmail() + "," + request.getPhoneNumber());
+
         User user = userRepository.findByPhoneNumber(request.getPhoneNumber())
+                .map(existingUser -> {
+                    // ✅ Update existing user's details if they’ve changed
+                    existingUser.setName(request.getName());
+                    existingUser.setEmail(request.getEmail());
+                    existingUser.setProfilePicture(request.getProfilePicture());
+                    existingUser.setAbout(
+                            existingUser.getAbout() != null ? existingUser.getAbout() : "Hey there! I am using WhatsApp."
+                    );
+                    return userRepository.save(existingUser);
+                })
                 .orElseGet(() -> {
+                    // ✅ Create a new user if not exists
+                    System.out.println("Creating new user...");
                     User newUser = new User();
                     newUser.setPhoneNumber(request.getPhoneNumber());
                     newUser.setName(request.getName());
@@ -36,11 +50,14 @@ public class AuthService {
                     return userRepository.save(newUser);
                 });
 
+        // ✅ Generate JWT Token
         String token = jwtUtil.generateToken(user.getPhoneNumber());
         UserDto userDto = mapToUserDto(user);
 
         return new AuthResponse(token, userDto);
     }
+
+
 
     public AuthResponse login(OtpVerifyRequest request) {
         if (!otpUtil.verifyOtp(request.getPhoneNumber(), request.getOtp())) {
@@ -48,7 +65,14 @@ public class AuthService {
         }
 
         User user = userRepository.findByPhoneNumber(request.getPhoneNumber())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseGet(() -> {
+                    User newUser = new User();
+                    newUser.setPhoneNumber(request.getPhoneNumber());
+                    // Set other default fields if needed
+                    newUser.setOnline(false);
+                    newUser.setName(""); // Optional placeholder
+                    return userRepository.save(newUser);
+                });
 
         String token = jwtUtil.generateToken(user.getPhoneNumber());
         UserDto userDto = mapToUserDto(user);

@@ -8,7 +8,9 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -73,7 +75,14 @@ public class JwtUtil {
     }
 
     private Key getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+//        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+//        return Keys.hmacShaKeyFor(keyBytes);
+        byte[] keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    public byte[] base64UrlDecode(String encoded) {
+        // Use Java Base64 URL decoder to decode token parts manually if needed
+        return Base64.getUrlDecoder().decode(encoded);
     }
 }

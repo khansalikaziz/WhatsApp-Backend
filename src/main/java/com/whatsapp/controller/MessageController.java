@@ -13,7 +13,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
@@ -47,14 +49,27 @@ public class MessageController {
                 "/topic/status." + messageDto.getSenderId(), messageDto);
     }
 
-    @PostMapping("/api/messages/upload")
-    @ResponseBody
-    public ResponseEntity<String> uploadMedia(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("type") String type) {
-        String fileUrl = fileStorageService.storeFile(file, type);
-        return ResponseEntity.ok(fileUrl);
-    }
+//    @PostMapping("/api/messages/upload")
+//    @ResponseBody
+//    public ResponseEntity<String> uploadMedia(
+//            @RequestParam("file") MultipartFile file,
+//            @RequestParam("type") String type) {
+//        String fileUrl = fileStorageService.storeFile(file, type);
+//        return ResponseEntity.ok(fileUrl);
+//    }
+@PostMapping("/api/messages/upload")
+@ResponseBody
+public ResponseEntity<Map<String, String>> uploadMedia(
+        @RequestParam("file") MultipartFile file,
+        @RequestParam("type") String type) {
+
+    String fileUrl = fileStorageService.storeFile(file, type);
+    Map<String, String> response = new HashMap<>();
+    response.put("url", fileUrl);
+    return ResponseEntity.ok(response);
+}
+
+
 
     @GetMapping("/api/messages/chat/{chatId}")
     @ResponseBody

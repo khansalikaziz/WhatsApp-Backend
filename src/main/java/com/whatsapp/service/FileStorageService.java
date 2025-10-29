@@ -35,6 +35,7 @@ public class FileStorageService {
             Path targetLocation = uploadPath.resolve(filename);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
+
             return "/uploads/" + fileType + "/" + filename;
         } catch (IOException ex) {
             throw new RuntimeException("Could not store file. Please try again!", ex);
