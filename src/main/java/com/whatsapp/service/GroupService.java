@@ -1,6 +1,7 @@
 package com.whatsapp.service;
 
 import com.whatsapp.dto.GroupDto;
+import com.whatsapp.dto.MessageDto;
 import com.whatsapp.dto.UserDto;
 import com.whatsapp.model.Group;
 import com.whatsapp.model.Message;
@@ -32,11 +33,11 @@ public class GroupService {
         group.setGroupIcon(groupDto.getGroupIcon());
         group.setCreatedBy(creator);
 
-        // Add creator as member and admin
         group.getMembers().add(creator);
         group.getAdmins().add(creator);
 
         group = groupRepository.save(group);
+
         return mapToGroupDto(group, creatorId);
     }
 
@@ -60,7 +61,6 @@ public class GroupService {
     public void removeMember(Long groupId, Long userId) {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -73,12 +73,24 @@ public class GroupService {
     public void makeAdmin(Long groupId, Long userId) {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (group.getMembers().contains(user) && !group.getAdmins().contains(user)) {
             group.getAdmins().add(user);
+            groupRepository.save(group);
+        }
+    }
+
+    @Transactional
+    public void removeAdmin(Long groupId, Long userId) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (group.getAdmins().contains(user)) {
+            group.getAdmins().remove(user);
             groupRepository.save(group);
         }
     }
@@ -119,6 +131,14 @@ public class GroupService {
         groupRepository.deleteById(groupId);
     }
 
+    public List<MessageDto> getGroupMessages(Long groupId) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+        return group.getMessages().stream()
+                .map(this::mapToMessageDto)
+                .collect(Collectors.toList());
+    }
+
     private GroupDto mapToGroupDto(Group group, Long currentUserId) {
         GroupDto dto = new GroupDto();
         dto.setId(group.getId());
@@ -129,24 +149,18 @@ public class GroupService {
         dto.setCreatedByName(group.getCreatedBy().getName());
         dto.setCreatedAt(group.getCreatedAt());
 
-        List<UserDto> members = group.getMembers().stream()
-                .map(this::mapToUserDto)
-                .collect(Collectors.toList());
-        dto.setMembers(members);
+        dto.setMembers(group.getMembers().stream()
+                .map(this::mapToUserDto).collect(Collectors.toList()));
 
-        List<UserDto> admins = group.getAdmins().stream()
-                .map(this::mapToUserDto)
-                .collect(Collectors.toList());
-        dto.setAdmins(admins);
+        dto.setAdmins(group.getAdmins().stream()
+                .map(this::mapToUserDto).collect(Collectors.toList()));
 
         if (!group.getMessages().isEmpty()) {
             Message lastMessage = group.getMessages().get(group.getMessages().size() - 1);
-            dto.setLastMessage(lastMessage.getContent() != null ? lastMessage.getContent() :
-                    lastMessage.getMessageType().toString());
+            dto.setLastMessage(lastMessage.getContent() != null ? lastMessage.getContent() : lastMessage.getMessageType().toString());
             dto.setLastMessageTime(lastMessage.getTimestamp());
         }
 
-        // Calculate unread count
         long unreadCount = group.getMessages().stream()
                 .filter(m -> !m.getSender().getId().equals(currentUserId)
                         && m.getStatus() != Message.MessageStatus.READ)
@@ -166,6 +180,19 @@ public class GroupService {
         dto.setAbout(user.getAbout());
         dto.setOnline(user.isOnline());
         dto.setLastSeen(user.getLastSeen());
+        return dto;
+    }
+
+    private MessageDto mapToMessageDto(Message message) {
+        MessageDto dto = new MessageDto();
+        dto.setId(message.getId());
+        dto.setContent(message.getContent());
+        dto.setSenderId(message.getSender().getId());
+        dto.setTimestamp(message.getTimestamp());
+        dto.setMessageType(message.getMessageType());
+        dto.setMediaUrl(message.getMediaUrl());
+        dto.setFileName(message.getFileName());
+        dto.setStatus(message.getStatus());
         return dto;
     }
 }

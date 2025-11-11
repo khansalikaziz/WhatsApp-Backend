@@ -1,6 +1,7 @@
 package com.whatsapp.controller;
 
 import com.whatsapp.dto.GroupDto;
+import com.whatsapp.dto.MessageDto;
 import com.whatsapp.service.FileStorageService;
 import com.whatsapp.service.GroupService;
 import lombok.RequiredArgsConstructor;
@@ -83,9 +84,25 @@ public class GroupController {
         return ResponseEntity.ok().build();
     }
 
+    @DeleteMapping("/{groupId}/admins/{userId}")
+    public ResponseEntity<Void> removeAdmin(
+            @PathVariable Long groupId,
+            @PathVariable Long userId) {
+        groupService.removeAdmin(groupId, userId);
+        return ResponseEntity.ok().build();
+    }
+
     @DeleteMapping("/{groupId}")
     public ResponseEntity<Void> deleteGroup(@PathVariable Long groupId) {
         groupService.deleteGroup(groupId);
         return ResponseEntity.ok().build();
     }
+
+    // New endpoint to get messages of a group
+    @GetMapping("/{groupId}/messages")
+    public ResponseEntity<List<MessageDto>> getGroupMessages(@PathVariable Long groupId) {
+        List<MessageDto> messages = groupService.getGroupMessages(groupId);
+        return ResponseEntity.ok(messages);
+    }
+
 }

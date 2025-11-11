@@ -1,18 +1,17 @@
 package com.whatsapp.service;
 
-import com.whatsapp.dto.CallSignalDto;
-import com.whatsapp.model.Call;
-import com.whatsapp.model.Group;
+
+import com.whatsapp.dto.CallHistoryDTO;
+import com.whatsapp.model.CallHistory;
 import com.whatsapp.model.User;
 import com.whatsapp.repository.CallRepository;
-import com.whatsapp.repository.GroupRepository;
 import com.whatsapp.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,63 +19,63 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CallService {
 
-    private final CallRepository callRepository;
+    private final CallRepository callHistoryRepository;
     private final UserRepository userRepository;
-    private final GroupRepository groupRepository;
 
     @Transactional
-    public Call initiateCall(CallSignalDto signalDto) {
-        User caller = userRepository.findById(signalDto.getCallerId())
-                .orElseThrow(() -> new RuntimeException("Caller not found"));
+    public CallHistory createCallHistory(Long callerId, Long receiverId, String callType) {
+        CallHistory callHistory = CallHistory.builder()
+                .callerId(callerId)
+                .receiverId(receiverId)
+                .callType(callType)
+                .callStatus("INITIATED")
+                .startTime(LocalDateTime.now())
+                .build();
 
-        Call call = new Call();
-        call.setCaller(caller);
-        call.setCallStatus(Call.CallStatus.INITIATED);
-
-        if (signalDto.getCallType().contains("GROUP")) {
-            Group group = groupRepository.findById(signalDto.getGroupId())
-                    .orElseThrow(() -> new RuntimeException("Group not found"));
-            call.setGroup(group);
-            call.setCallType(Call.CallType.valueOf(signalDto.getCallType()));
-        } else {
-            User receiver = userRepository.findById(signalDto.getReceiverId())
-                    .orElseThrow(() -> new RuntimeException("Receiver not found"));
-            call.setReceiver(receiver);
-            call.setCallType(Call.CallType.valueOf(signalDto.getCallType()));
-        }
-
-        return callRepository.save(call);
+        return callHistoryRepository.save(callHistory);
     }
 
     @Transactional
-    public void updateCallStatus(Long callId, Call.CallStatus status) {
-        Call call = callRepository.findById(callId)
-                .orElseThrow(() -> new RuntimeException("Call not found"));
+    public void updateCallStatus(Long callHistoryId, String status, LocalDateTime endTime) {
+        CallHistory callHistory = callHistoryRepository.findById(callHistoryId)
+                .orElseThrow(() -> new RuntimeException("Call history not found"));
 
-        call.setCallStatus(status);
+        callHistory.setCallStatus(status);
+        callHistory.setEndTime(endTime);
 
-        if (status == Call.CallStatus.COMPLETED ||
-                status == Call.CallStatus.MISSED ||
-                status == Call.CallStatus.DECLINED ||
-                status == Call.CallStatus.FAILED) {
-            call.setEndTime(LocalDateTime.now());
-            if (call.getStartTime() != null) {
-                long duration = ChronoUnit.SECONDS.between(call.getStartTime(), call.getEndTime());
-                call.setDuration(duration);
-            }
-        } else if (status == Call.CallStatus.ONGOING && call.getStartTime() == null) {
-            call.setStartTime(LocalDateTime.now());
+        if (endTime != null && callHistory.getStartTime() != null) {
+            Duration duration = Duration.between(callHistory.getStartTime(), endTime);
+            callHistory.setCallDuration(duration.getSeconds());
         }
 
-        callRepository.save(call);
+        callHistoryRepository.save(callHistory);
     }
 
-    public List<Call> getCallHistory(Long userId) {
-        return callRepository.findCallHistoryByUserId(userId);
+    public List<CallHistoryDTO> getUserCallHistory(Long userId) {
+        List<CallHistory> callHistories = callHistoryRepository.findCallHistoryByUserId(userId);
+
+        return callHistories.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
-    public Call getCallById(Long callId) {
-        return callRepository.findById(callId)
-                .orElseThrow(() -> new RuntimeException("Call not found"));
+    private CallHistoryDTO convertToDTO(CallHistory callHistory) {
+        User caller = userRepository.findById(callHistory.getCallerId()).orElse(null);
+        User receiver = userRepository.findById(callHistory.getReceiverId()).orElse(null);
+
+        return CallHistoryDTO.builder()
+                .id(callHistory.getId())
+                .callerId(callHistory.getCallerId())
+                .callerName(caller != null ? caller.getName() : "Unknown")
+                .callerPhoto(caller != null ? caller.getProfilePicture() : null)
+                .receiverId(callHistory.getReceiverId())
+                .receiverName(receiver != null ? receiver.getName() : "Unknown")
+                .receiverPhoto(receiver != null ? receiver.getProfilePicture() : null)
+                .callType(callHistory.getCallType())
+                .callStatus(callHistory.getCallStatus())
+                .callDuration(callHistory.getCallDuration())
+                .startTime(callHistory.getStartTime())
+                .endTime(callHistory.getEndTime())
+                .build();
     }
 }
+
+
