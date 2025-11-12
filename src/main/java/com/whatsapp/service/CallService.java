@@ -57,6 +57,8 @@ public class CallService {
         return callHistories.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
+
+
     private CallHistoryDTO convertToDTO(CallHistory callHistory) {
         User caller = userRepository.findById(callHistory.getCallerId()).orElse(null);
         User receiver = userRepository.findById(callHistory.getReceiverId()).orElse(null);
@@ -65,10 +67,10 @@ public class CallService {
                 .id(callHistory.getId())
                 .callerId(callHistory.getCallerId())
                 .callerName(caller != null ? caller.getName() : "Unknown")
-                .callerPhoto(caller != null ? caller.getProfilePicture() : null)
+                .callerPhoto(null)
                 .receiverId(callHistory.getReceiverId())
                 .receiverName(receiver != null ? receiver.getName() : "Unknown")
-                .receiverPhoto(receiver != null ? receiver.getProfilePicture() : null)
+                .receiverPhoto(null)
                 .callType(callHistory.getCallType())
                 .callStatus(callHistory.getCallStatus())
                 .callDuration(callHistory.getCallDuration())
@@ -76,6 +78,8 @@ public class CallService {
                 .endTime(callHistory.getEndTime())
                 .build();
     }
+
+
 }
 
 
