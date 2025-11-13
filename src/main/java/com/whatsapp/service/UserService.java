@@ -103,4 +103,14 @@ public class UserService {
         dto.setLastSeen(user.getLastSeen());
         return dto;
     }
+
+    public List<UserDto> searchUsers(String query, Long currentUserId) {
+        if (query == null || query.trim().isEmpty()) {
+            return List.of();
+        }
+        List<User> users = userRepository.searchUsersByNameOrPhone(query.trim(), currentUserId);
+        return users.stream()
+                .map(this::mapToUserDto)
+                .collect(Collectors.toList());
+    }
 }

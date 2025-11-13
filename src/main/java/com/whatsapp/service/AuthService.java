@@ -34,7 +34,7 @@ public class AuthService {
                     existingUser.setEmail(request.getEmail());
                     existingUser.setProfilePicture(request.getProfilePicture());
                     existingUser.setAbout(
-                            existingUser.getAbout() != null ? existingUser.getAbout() : "Hey there! I am using WhatsApp."
+                            existingUser.getAbout() != null ? existingUser.getAbout() : "Hey there! I am using RailChat."
                     );
                     return userRepository.save(existingUser);
                 })
@@ -46,7 +46,7 @@ public class AuthService {
                     newUser.setName(request.getName());
                     newUser.setEmail(request.getEmail());
                     newUser.setProfilePicture(request.getProfilePicture());
-                    newUser.setAbout("Hey there! I am using WhatsApp.");
+                    newUser.setAbout("Hey there! I am using RailChat.");
                     return userRepository.save(newUser);
                 });
 

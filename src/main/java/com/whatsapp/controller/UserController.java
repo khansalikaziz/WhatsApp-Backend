@@ -80,4 +80,14 @@ public class UserController {
         List<UserDto> registeredContacts = userService.syncContacts(userId, phoneNumbers);
         return ResponseEntity.ok(registeredContacts);
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<UserDto>> searchUsers(
+            @RequestParam String query,
+            Authentication authentication) {
+        String phoneNumber = authentication.getName();
+        UserDto currentUser = userService.getUserByPhoneNumber(phoneNumber);
+        List<UserDto> users = userService.searchUsers(query, currentUser.getId());
+        return ResponseEntity.ok(users);
+    }
 }
