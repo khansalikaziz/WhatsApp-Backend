@@ -17,10 +17,11 @@ public class AuthService {
     private final OtpUtil otpUtil;
     private final JwtUtil jwtUtil;
 
-    public void sendOtp(OtpRequest request) {
+    public String sendOtp(OtpRequest request) {
         String otp = otpUtil.generateOtp(request.getPhoneNumber());
         // In production, integrate with SMS service (Twilio, AWS SNS, etc.)
         System.out.println("OTP sent to " + request.getPhoneNumber() + ": " + otp);
+        return otp;
     }
 
     @Transactional
